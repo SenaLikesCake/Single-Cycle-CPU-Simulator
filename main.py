@@ -12,16 +12,24 @@ def RegWrite(instruction):
     else:
         return False
 
-# TODO Add ALU Control
 def ALU(read1, read2, aluControl = None):
-    read1 = int(read1, 2)
-    read2 = int(read2, 2)
+    num1 = int(registers[int(read1, 2)], 2)
+    num2 = int(registers[int(read2, 2)], 2)
+
     ## R-Type
     def Add(num1, num2):
         return bin(num1 + num2)
     def Sub(num1, num2):
         return bin(num1 - num2)
-    return Add(read1, read2)
+    
+    
+    if aluControl[1] == "0b0":
+        if aluControl[0] == "0b0":
+            return Add(num1, num2)
+        else:
+            return Sub(num1, num2)
+
+    
 
 ### Initialization
 
@@ -34,13 +42,14 @@ for i in range (255):
     instructionMemory.append(0b0)
 
 # TODO Read Files For Instructions 
-instructionMemory[0] = 0b00000000010000100000001000110011
+instructionMemory[0] = 0b01000000001100100000001000110011
 
 ## Initialize Registers
 registers = []
 for i in range(32):
     registers.append(0)
 registers[4] = bin(4)
+registers[3] = bin(1)
 
 ### Main Loop
 # TODO Figure Out Exit Condition
@@ -52,7 +61,9 @@ while pc == 0:
     read1 = GetSpecificBits(instruction, 15, 5)
     read2 = GetSpecificBits(instruction, 20, 5)
     writeReg = GetSpecificBits(instruction, 7, 5)
-    writeData = (ALU(read1, read2))
+    aluControl = [GetSpecificBits(instruction, 30, 1), GetSpecificBits(instruction, 12, 3)]
+    writeData = (ALU(read1, read2, aluControl))
+    
 
     ### End of Cycle
     # Update Registers if RegWrite
