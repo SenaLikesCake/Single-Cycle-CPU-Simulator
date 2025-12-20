@@ -30,7 +30,20 @@ def ImmGen(instruction):
 
 def RegWrite(instruction):
     if (GetSpecificBits(instruction, 0, 7) == '0b110011' or
-        GetSpecificBits(instruction, 0, 7) == '0b10011'):
+        GetSpecificBits(instruction, 0, 7) == '0b10011' or
+        GetSpecificBits(instruction, 0, 7) == '0b11'):
+        return True
+    else:
+        return False
+
+def MemRead(instruction):
+    if GetSpecificBits(instruction, 0, 7) == '0b11':
+        return True
+    else:
+        return False
+
+def MemToReg(instruction):
+    if GetSpecificBits(instruction, 0, 7) == '0b11':
         return True
     else:
         return False
@@ -51,9 +64,9 @@ def ALUSrc(instruction):
 def ALU(num1, num2, aluControl = None):
     # num1 = int(registers[int(read1, 2)], 2)
     # num2 = int(registers[int(read2, 2)], 2)
-    
+    opcode = GetSpecificBits(instruction, 0, 7)
     # R-Type
-    if GetSpecificBits(instruction, 0, 7) == '0b110011':
+    if opcode == '0b110011':
         if aluControl[1] == "0b0":
             # add
             if aluControl[0] == "0b0":
@@ -61,14 +74,32 @@ def ALU(num1, num2, aluControl = None):
             # sub
             else:
                 return bin(num1 - num2)
+        # xor
+        elif aluControl[1] == "0b100":
+            return bin(num1 ^ num2)
+        # or
+        elif aluControl[1] == "0b110":
+            return bin(num1 | num2)
+        # and
+        elif aluControl[1] == "0b111":
+            return bin(num1 & num2)
     # I-Type
-    elif GetSpecificBits(instruction, 0, 7) == '0b10011':
+    elif opcode == '0b10011':
+        # addi
         if aluControl[1] == "0b0":
-            # addi
-            if aluControl[0] == "0b0":
-                return bin(num1 + num2)
-
-    
+            return bin(num1 + num2)
+        # xori
+        elif aluControl[1] == "0b100":
+            return bin(num1 ^ num2)
+        # ori
+        elif aluControl[1] == "0b110":
+            return bin(num1 | num2)
+        # andi
+        elif aluControl[1] == "0b111":
+            return bin(num1 & num2)
+    # I-Type L
+    elif opcode == '0b11':
+        return bin(num1 + num2)
 
 ### Initialization
 
@@ -81,13 +112,22 @@ for i in range (255):
     instructionMemory.append(0b0)
 
 # TODO Read Files For Instructions 
-instructionMemory[0] = 0b000001100100000000110010011
+instructionMemory[0] = 0b000000000100010000010000011
+
+## Initialize Memory
+memory = []
+for i in range(2**6):
+    memory.append(0)
+memory[0] = bin(1)
+memory[1] = bin(2)
+memory[2] = bin(3)
+memory[3] = bin(4)
 
 ## Initialize Registers
 registers = []
 for i in range(32):
     registers.append(0)
-registers[4] = bin(4)
+registers[4] = bin(0)
 
 ### Main Loop
 # TODO Figure Out Exit Condition
@@ -101,10 +141,27 @@ while pc == 0:
     writeReg = GetSpecificBits(instruction, 7, 5)
     aluControl = [GetSpecificBits(instruction, 30, 1), GetSpecificBits(instruction, 12, 3)]
     if ALUSrc(instruction):
-        writeData = (ALU(int(registers[int(read1, 2)], 2), int(ImmGen(instruction), 2), aluControl))    
+        imm = int(ImmGen(instruction), 2)
+        aluResult = ALU(int(registers[int(read1, 2)], 2), imm, aluControl) 
     else:
-        writeData = (ALU(int(registers[int(read1, 2)], 2), int(registers[int(read2, 2)], 2), aluControl))
+        aluResult = ALU(int(registers[int(read1, 2)], 2), int(registers[int(read2, 2)], 2), aluControl)
     
+    # Read Memory
+    if MemRead(instruction):
+        # lb
+        if GetSpecificBits(instruction, 12, 3) == '0b0':
+            readData = memory[int(aluResult, 2)]
+        # lh
+        elif GetSpecificBits(instruction, 12, 3) == '0b1':
+            readData = memory[int(aluResult, 2)] + memory[int(aluResult, 2) + 1][2:]
+        # lw
+        elif GetSpecificBits(instruction, 12, 3) == '0b10':
+            readData = memory[int(aluResult, 2)] + memory[int(aluResult, 2) + 1][2:] + memory[int(aluResult, 2) + 2][2:] + memory[int(aluResult, 2) + 3][2:]
+
+    if MemToReg(instruction):
+        writeData = readData
+    else:
+        writeData = aluResult
 
     ### End of Cycle
     # Update Registers if RegWrite
@@ -119,3 +176,4 @@ print(f"read2: {read2} / {int(read2, 2)}")
 print(f"writeReg: {writeReg} / {int(writeReg, 2)}")
 print(f"writeData: {writeData} / {int(writeData, 2)}")
 print(registers)
+print(memory)
