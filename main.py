@@ -29,27 +29,44 @@ def ImmGen(instruction):
 
 
 def RegWrite(instruction):
-    if GetSpecificBits(instruction, 0, 7) == '0b110011':
+    if (GetSpecificBits(instruction, 0, 7) == '0b110011' or
+        GetSpecificBits(instruction, 0, 7) == '0b10011'):
         return True
     else:
         return False
 
-def ALU(read1, read2, aluControl = None):
-    num1 = int(registers[int(read1, 2)], 2)
-    num2 = int(registers[int(read2, 2)], 2)
+def ALUSrc(instruction):
+    if (GetSpecificBits(instruction, 0, 7) == '0b10011' or 
+        GetSpecificBits(instruction, 0, 7) == '0b11' or 
+        GetSpecificBits(instruction, 0, 7) == '0b1100111' or
+        GetSpecificBits(instruction, 0, 7) == '0b100011' or
+        GetSpecificBits(instruction, 0, 7) == '0b1100011' or
+        GetSpecificBits(instruction, 0, 7) == '0b110111' or
+        GetSpecificBits(instruction, 0, 7) == '0b10111' or
+        GetSpecificBits(instruction, 0, 7) == '0b1101111'):
+        return True
+    else:
+        return False
 
-    ## R-Type
-    def Add(num1, num2):
-        return bin(num1 + num2)
-    def Sub(num1, num2):
-        return bin(num1 - num2)
+def ALU(num1, num2, aluControl = None):
+    # num1 = int(registers[int(read1, 2)], 2)
+    # num2 = int(registers[int(read2, 2)], 2)
     
-    
-    if aluControl[1] == "0b0":
-        if aluControl[0] == "0b0":
-            return Add(num1, num2)
-        else:
-            return Sub(num1, num2)
+    # R-Type
+    if GetSpecificBits(instruction, 0, 7) == '0b110011':
+        if aluControl[1] == "0b0":
+            # add
+            if aluControl[0] == "0b0":
+                return bin(num1 + num2)
+            # sub
+            else:
+                return bin(num1 - num2)
+    # I-Type
+    elif GetSpecificBits(instruction, 0, 7) == '0b10011':
+        if aluControl[1] == "0b0":
+            # addi
+            if aluControl[0] == "0b0":
+                return bin(num1 + num2)
 
     
 
@@ -64,14 +81,13 @@ for i in range (255):
     instructionMemory.append(0b0)
 
 # TODO Read Files For Instructions 
-instructionMemory[0] = 0b01000000001100100000001000110011
+instructionMemory[0] = 0b000001100100000000110010011
 
 ## Initialize Registers
 registers = []
 for i in range(32):
     registers.append(0)
 registers[4] = bin(4)
-registers[3] = bin(1)
 
 ### Main Loop
 # TODO Figure Out Exit Condition
@@ -84,7 +100,10 @@ while pc == 0:
     read2 = GetSpecificBits(instruction, 20, 5)
     writeReg = GetSpecificBits(instruction, 7, 5)
     aluControl = [GetSpecificBits(instruction, 30, 1), GetSpecificBits(instruction, 12, 3)]
-    writeData = (ALU(read1, read2, aluControl))
+    if ALUSrc(instruction):
+        writeData = (ALU(int(registers[int(read1, 2)], 2), int(ImmGen(instruction), 2), aluControl))    
+    else:
+        writeData = (ALU(int(registers[int(read1, 2)], 2), int(registers[int(read2, 2)], 2), aluControl))
     
 
     ### End of Cycle
@@ -95,8 +114,8 @@ while pc == 0:
     pc += 4
     
 
-print(f"read1: {read1}")
-print(f"read2: {read2}")
-print(f"writeReg: {writeReg}")
-print(f"writeData: {writeData}")
+print(f"read1: {read1} / {int(read1, 2)}")
+print(f"read2: {read2} / {int(read2, 2)}")
+print(f"writeReg: {writeReg} / {int(writeReg, 2)}")
+print(f"writeData: {writeData} / {int(writeData, 2)}")
 print(registers)
