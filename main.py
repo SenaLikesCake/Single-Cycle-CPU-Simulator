@@ -12,11 +12,15 @@ def RegWrite(instruction):
     else:
         return False
 
+# TODO Add ALU Control
 def ALU(read1, read2, aluControl = None):
     read1 = int(read1, 2)
     read2 = int(read2, 2)
+    ## R-Type
     def Add(num1, num2):
         return bin(num1 + num2)
+    def Sub(num1, num2):
+        return bin(num1 - num2)
     return Add(read1, read2)
 
 ### Initialization
