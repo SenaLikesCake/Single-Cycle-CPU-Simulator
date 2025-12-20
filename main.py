@@ -6,6 +6,28 @@ def GetSpecificBits(num, start, span):
     temp = int(temp, 2) 
     return bin((num >> start) & temp)
 
+## TODO Test ALL Types when their functions are implemented
+def ImmGen(instruction):
+    # I-Type
+    if GetSpecificBits(instruction, 0, 7) == '0b10011' or GetSpecificBits(instruction, 0, 7) == '0b11' or GetSpecificBits(instruction, 0, 7) == '0b1100111':
+        return GetSpecificBits(instruction, 20, 12)
+    # S-Type
+    elif GetSpecificBits(instruction, 0, 7) == '0b100011':
+        return GetSpecificBits(instruction, 7, 5) + GetSpecificBits(instruction, 25, 7)[2:]
+    # B-Type
+    elif GetSpecificBits(instruction, 0, 7) == '0b1100011':
+        return GetSpecificBits(instruction, 7, 4) + GetSpecificBits(instruction, 25, 6)[2:] + GetSpecificBits(instruction, 11, 0)[2:] + GetSpecificBits(instruction, 31, 0)[2:]
+    # U-Type
+    elif GetSpecificBits(instruction, 0, 7) == '0b110111' or GetSpecificBits(instruction, 0, 7) == '0b10111':
+        return GetSpecificBits(instruction, 12, 20) + 12 * "0"
+    # J-Type
+    elif GetSpecificBits(instruction, 0, 7) == '0b1101111':
+        return GetSpecificBits(instruction, 31, 1) + GetSpecificBits(instruction, 12, 7)[2:] + GetSpecificBits(instruction, 20, 1)[2:] + GetSpecificBits(instruction, 21, 10)[2:]
+    # R-Type / Fallback
+    else:
+        return None
+
+
 def RegWrite(instruction):
     if GetSpecificBits(instruction, 0, 7) == '0b110011':
         return True
