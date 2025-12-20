@@ -113,12 +113,23 @@ def ALU(num1, num2, aluControl = None):
 pc = 0b0
 
 ## Initialize Program Memory
-instructionMemory = []
-for i in range (255):
-    instructionMemory.append(0b0)
+# instructionMemory = []
+# for i in range (255):
+    # instructionMemory.append(0b0)
 
-# TODO Read Files For Instructions 
-instructionMemory[0] = 0b00000000010000000010000000100011
+inputfile = "test.txt"
+file = open(inputfile, "r")
+content = file.read()
+instructionarr = content.split("\n")
+
+instructionMemory = []
+for i in range(255):
+    if i % 4 == 0 and i // 4 < len(instructionarr):
+        instructionMemory.append(instructionarr[i // 4])
+    else:
+        instructionMemory.append(None)
+
+# instructionMemory[0] = 0b00000000010000000010000000100011
 
 ## Initialize Memory
 memory = []
@@ -130,13 +141,14 @@ for i in range(2**6):
 registers = []
 for i in range(32):
     registers.append(0)
-registers[4] = bin(33554471)
+registers[2] = bin(1)
+registers[3] = bin(2)
 
 ### Main Loop
 # TODO Figure Out Exit Condition
-while pc == 0:
+while instructionMemory[pc] != None:
     # Read Instruction
-    instruction = instructionMemory[pc]
+    instruction = int(instructionMemory[pc], 2)
     
     # Registers Variables
     readReg1 = GetSpecificBits(instruction, 15, 5)
