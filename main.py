@@ -41,6 +41,12 @@ def MemRead(instruction):
         return True
     else:
         return False
+    
+def MemWrite(instruction):
+    if GetSpecificBits(instruction, 0, 7) == '0b100011':
+        return True
+    else:
+        return False
 
 def MemToReg(instruction):
     if GetSpecificBits(instruction, 0, 7) == '0b11':
@@ -97,8 +103,8 @@ def ALU(num1, num2, aluControl = None):
         # andi
         elif aluControl[1] == "0b111":
             return bin(num1 & num2)
-    # I-Type L
-    elif opcode == '0b11':
+    # I-Type Load / S-Type
+    elif opcode == "0b11" or opcode == "0b100011":
         return bin(num1 + num2)
 
 ### Initialization
@@ -112,22 +118,19 @@ for i in range (255):
     instructionMemory.append(0b0)
 
 # TODO Read Files For Instructions 
-instructionMemory[0] = 0b000000000100010000010000011
+instructionMemory[0] = 0b00000000010000000010000000100011
 
 ## Initialize Memory
 memory = []
 for i in range(2**6):
     memory.append(0)
-memory[0] = bin(1)
-memory[1] = bin(2)
-memory[2] = bin(3)
-memory[3] = bin(4)
+
 
 ## Initialize Registers
 registers = []
 for i in range(32):
     registers.append(0)
-registers[4] = bin(0)
+registers[4] = bin(33554471)
 
 ### Main Loop
 # TODO Figure Out Exit Condition
@@ -136,18 +139,28 @@ while pc == 0:
     instruction = instructionMemory[pc]
     
     # Registers Variables
-    read1 = GetSpecificBits(instruction, 15, 5)
-    read2 = GetSpecificBits(instruction, 20, 5)
+    readReg1 = GetSpecificBits(instruction, 15, 5)
+    readReg2 = GetSpecificBits(instruction, 20, 5)
     writeReg = GetSpecificBits(instruction, 7, 5)
     aluControl = [GetSpecificBits(instruction, 30, 1), GetSpecificBits(instruction, 12, 3)]
+
+    readData1 = registers[int(readReg1, 2)]
+    readData2 = registers[int(readReg2, 2)]
+
+    if type(readData1) == int:
+        readData1 = bin(readData1)
+    if type(readData2) == int:
+        readData2 = bin(readData2)
+
     if ALUSrc(instruction):
         imm = int(ImmGen(instruction), 2)
-        aluResult = ALU(int(registers[int(read1, 2)], 2), imm, aluControl) 
+        aluResult = ALU(int(readData1, 2), imm, aluControl) 
     else:
-        aluResult = ALU(int(registers[int(read1, 2)], 2), int(registers[int(read2, 2)], 2), aluControl)
+        aluResult = ALU(int(readData1, 2), int(readData2, 2), aluControl)
     
     # Read Memory
     if MemRead(instruction):
+        # TODO Check if lb, lh and lw are distinguished in Data Memory 
         # lb
         if GetSpecificBits(instruction, 12, 3) == '0b0':
             readData = memory[int(aluResult, 2)]
@@ -158,6 +171,29 @@ while pc == 0:
         elif GetSpecificBits(instruction, 12, 3) == '0b10':
             readData = memory[int(aluResult, 2)] + memory[int(aluResult, 2) + 1][2:] + memory[int(aluResult, 2) + 2][2:] + memory[int(aluResult, 2) + 3][2:]
 
+    if MemWrite(instruction):
+        writeData = readData2
+        writeData = '0b' + "0" * (34 - len(writeData)) + writeData[2:]
+        #sb
+        if GetSpecificBits(instruction, 12, 3) == '0b0':
+            mem1 = bin(int('0b' + writeData[-8:], 2))
+            memory[int(aluResult, 2)] = mem1
+        #sh
+        elif GetSpecificBits(instruction, 12, 3) == '0b1':
+            mem2 = bin(int('0b' + writeData[-16:-8], 2))
+            mem1 = bin(int('0b' + writeData[-8:], 2))
+            memory[int(aluResult, 2)] = mem2
+            memory[int(aluResult, 2) + 1] = mem1
+        #sw
+        elif GetSpecificBits(instruction, 12, 3) == '0b10':
+            mem4 = bin(int(writeData[:11], 2))
+            mem3 = bin(int('0b' + writeData[11:19], 2))
+            mem2 = bin(int('0b' + writeData[-16:-8], 2))
+            mem1 = bin(int('0b' + writeData[-8:], 2))
+            memory[int(aluResult, 2)] = mem4
+            memory[int(aluResult, 2) + 1] = mem3
+            memory[int(aluResult, 2) + 2] = mem2
+            memory[int(aluResult, 2) + 3] = mem1
     if MemToReg(instruction):
         writeData = readData
     else:
@@ -171,9 +207,9 @@ while pc == 0:
     pc += 4
     
 
-print(f"read1: {read1} / {int(read1, 2)}")
-print(f"read2: {read2} / {int(read2, 2)}")
-print(f"writeReg: {writeReg} / {int(writeReg, 2)}")
+# print(f"read1: {read1} / {int(read1, 2)}")
+# print(f"read2: {read2} / {int(read2, 2)}")
+# print(f"mem1: {mem1} / {int(mem1, 2)}")
 print(f"writeData: {writeData} / {int(writeData, 2)}")
 print(registers)
 print(memory)
