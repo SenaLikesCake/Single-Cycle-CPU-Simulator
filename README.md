@@ -15,3 +15,4 @@
 - Pass file as parameter instead of having hardcoded "test.txt" file
 - Implement some remaining R-Type and I-type instructions
 - Implement B, J and U-type instructions
+- Write instructions in assembly and have program convert into binary
