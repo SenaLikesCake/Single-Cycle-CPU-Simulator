@@ -150,21 +150,25 @@ while instructionMemory[pc] != None:
     # Read Instruction
     instruction = int(instructionMemory[pc], 2)
 
-    # Registers Variables
+    # Decode Instruction
     readReg1 = GetSpecificBits(instruction, 15, 5)
     readReg2 = GetSpecificBits(instruction, 20, 5)
     writeReg = GetSpecificBits(instruction, 7, 5)
     aluControl = [GetSpecificBits(instruction, 30, 1), GetSpecificBits(instruction, 12, 3)]
 
+    # Read Registers
     readData1 = registers[int(readReg1, 2)]
     readData2 = registers[int(readReg2, 2)]
 
+    # Convert readData To Binary
     if type(readData1) == int:
         readData1 = bin(readData1)
     if type(readData2) == int:
         readData2 = bin(readData2)
 
+    # MUX To Choose Between Read Data 2 Or Imm
     if ALUSrc(instruction):
+        # TODO Get imm On Decode Step
         imm = int(ImmGen(instruction), 2)
         aluResult = ALU(int(readData1, 2), imm, aluControl)
     else:
@@ -172,7 +176,6 @@ while instructionMemory[pc] != None:
 
     # Read Memory
     if MemRead(instruction):
-        # TODO Check if lb, lh and lw are distinguished in Data Memory
         # lb
         if GetSpecificBits(instruction, 12, 3) == '0b0':
             readData = memory[int(aluResult, 2)]
@@ -183,6 +186,7 @@ while instructionMemory[pc] != None:
         elif GetSpecificBits(instruction, 12, 3) == '0b10':
             readData = memory[int(aluResult, 2)] + memory[int(aluResult, 2) + 1][2:] + memory[int(aluResult, 2) + 2][2:] + memory[int(aluResult, 2) + 3][2:]
 
+    # Write Memory
     if MemWrite(instruction):
         writeData = readData2
         writeData = '0b' + "0" * (34 - len(writeData)) + writeData[2:]
@@ -206,6 +210,8 @@ while instructionMemory[pc] != None:
             memory[int(aluResult, 2) + 1] = mem3
             memory[int(aluResult, 2) + 2] = mem2
             memory[int(aluResult, 2) + 3] = mem1
+
+    # MUX To Choose Write Data To Be Read Data Or ALU Result
     if MemToReg(instruction):
         writeData = readData
     else:
@@ -215,6 +221,7 @@ while instructionMemory[pc] != None:
     # Update Registers if RegWrite
     if RegWrite(instruction):
         registers[int(f"{writeReg}", 2)] = writeData
+
     # Update Program Counter (End Of Cycle)
     pc += 4
 
