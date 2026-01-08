@@ -3,7 +3,7 @@
 def GetSpecificBits(num, start, span):
     temp = "0b0"
     temp += span * "1"
-    temp = int(temp, 2) 
+    temp = int(temp, 2)
     return bin((num >> start) & temp)
 
 ## TODO Test ALL Types when their functions are implemented
@@ -41,7 +41,7 @@ def MemRead(instruction):
         return True
     else:
         return False
-    
+
 def MemWrite(instruction):
     if GetSpecificBits(instruction, 0, 7) == '0b100011':
         return True
@@ -55,8 +55,8 @@ def MemToReg(instruction):
         return False
 
 def ALUSrc(instruction):
-    if (GetSpecificBits(instruction, 0, 7) == '0b10011' or 
-        GetSpecificBits(instruction, 0, 7) == '0b11' or 
+    if (GetSpecificBits(instruction, 0, 7) == '0b10011' or
+        GetSpecificBits(instruction, 0, 7) == '0b11' or
         GetSpecificBits(instruction, 0, 7) == '0b1100111' or
         GetSpecificBits(instruction, 0, 7) == '0b100011' or
         GetSpecificBits(instruction, 0, 7) == '0b1100011' or
@@ -141,15 +141,15 @@ for i in range(2**6):
 registers = []
 for i in range(32):
     registers.append(0)
-registers[2] = bin(1)
-registers[3] = bin(2)
+# registers[2] = bin(1)
+# registers[3] = bin(2)
 
 ### Main Loop
 # TODO Figure Out Exit Condition
 while instructionMemory[pc] != None:
     # Read Instruction
     instruction = int(instructionMemory[pc], 2)
-    
+
     # Registers Variables
     readReg1 = GetSpecificBits(instruction, 15, 5)
     readReg2 = GetSpecificBits(instruction, 20, 5)
@@ -166,13 +166,13 @@ while instructionMemory[pc] != None:
 
     if ALUSrc(instruction):
         imm = int(ImmGen(instruction), 2)
-        aluResult = ALU(int(readData1, 2), imm, aluControl) 
+        aluResult = ALU(int(readData1, 2), imm, aluControl)
     else:
         aluResult = ALU(int(readData1, 2), int(readData2, 2), aluControl)
-    
+
     # Read Memory
     if MemRead(instruction):
-        # TODO Check if lb, lh and lw are distinguished in Data Memory 
+        # TODO Check if lb, lh and lw are distinguished in Data Memory
         # lb
         if GetSpecificBits(instruction, 12, 3) == '0b0':
             readData = memory[int(aluResult, 2)]
@@ -217,7 +217,7 @@ while instructionMemory[pc] != None:
         registers[int(f"{writeReg}", 2)] = writeData
     # Update Program Counter (End Of Cycle)
     pc += 4
-    
+
 
 # print(f"read1: {read1} / {int(read1, 2)}")
 # print(f"read2: {read2} / {int(read2, 2)}")
