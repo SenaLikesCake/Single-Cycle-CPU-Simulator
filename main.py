@@ -16,7 +16,8 @@ def ImmGen(instruction):
         return GetSpecificBits(instruction, 7, 5) + GetSpecificBits(instruction, 25, 7)[2:]
     # B-Type
     elif GetSpecificBits(instruction, 0, 7) == '0b1100011':
-        return GetSpecificBits(instruction, 7, 4) + GetSpecificBits(instruction, 25, 6)[2:] + GetSpecificBits(instruction, 11, 0)[2:] + GetSpecificBits(instruction, 31, 0)[2:]
+        # return GetSpecificBits(instruction, 7, 4) + GetSpecificBits(instruction, 25, 6)[2:] + GetSpecificBits(instruction, 11, 0)[2:] + GetSpecificBits(instruction, 31, 0)[2:]
+        return GetSpecificBits(instruction, 31, 1) + GetSpecificBits(instruction, 7, 1)[2:] + GetSpecificBits(instruction, 25, 6)[2:] + GetSpecificBits(instruction, 8, 4)[2:] + "0"
     # U-Type
     elif GetSpecificBits(instruction, 0, 7) == '0b110111' or GetSpecificBits(instruction, 0, 7) == '0b10111':
         return GetSpecificBits(instruction, 12, 20) + 12 * "0"
@@ -55,21 +56,24 @@ def MemToReg(instruction):
         return False
 
 def ALUSrc(instruction):
-    if (GetSpecificBits(instruction, 0, 7) == '0b10011' or
-        GetSpecificBits(instruction, 0, 7) == '0b11' or
-        GetSpecificBits(instruction, 0, 7) == '0b1100111' or
-        GetSpecificBits(instruction, 0, 7) == '0b100011' or
-        GetSpecificBits(instruction, 0, 7) == '0b1100011' or
-        GetSpecificBits(instruction, 0, 7) == '0b110111' or
-        GetSpecificBits(instruction, 0, 7) == '0b10111' or
-        GetSpecificBits(instruction, 0, 7) == '0b1101111'):
+    if (GetSpecificBits(instruction, 0, 7) == '0b10011' or      # I-Type
+        GetSpecificBits(instruction, 0, 7) == '0b11' or         # I-Type Load / L-Type
+        GetSpecificBits(instruction, 0, 7) == '0b1100111' or    # I-Type jalr
+        GetSpecificBits(instruction, 0, 7) == '0b100011' or     # S-Type
+        GetSpecificBits(instruction, 0, 7) == '0b110111' or     # U-Type lui
+        GetSpecificBits(instruction, 0, 7) == '0b10111' or      # U-Type auipc
+        GetSpecificBits(instruction, 0, 7) == '0b1101111'):     # J-Type
+        return True
+    else:
+        return False # R-Type / B-Type
+
+def PCSrc(instruction, aluResult):
+    if GetSpecificBits(instruction, 0, 7) == '0b1100011' and aluResult:
         return True
     else:
         return False
 
 def ALU(num1, num2, aluControl = None):
-    # num1 = int(registers[int(read1, 2)], 2)
-    # num2 = int(registers[int(read2, 2)], 2)
     opcode = GetSpecificBits(instruction, 0, 7)
     # R-Type
     if opcode == '0b110011':
@@ -106,6 +110,16 @@ def ALU(num1, num2, aluControl = None):
     # I-Type Load / S-Type
     elif opcode == "0b11" or opcode == "0b100011":
         return bin(num1 + num2)
+    # B-Type
+    elif opcode ==  "0b1100011":
+        # beq
+        return num1 == num2
+        # bne
+        return num1 != num2
+        # blt
+        return num1 < num2
+        # bhe
+        return num1 >=num2
 
 ### Initialization
 
@@ -113,9 +127,6 @@ def ALU(num1, num2, aluControl = None):
 pc = 0b0
 
 ## Initialize Program Memory
-# instructionMemory = []
-# for i in range (255):
-    # instructionMemory.append(0b0)
 
 inputfile = "test.txt"
 file = open(inputfile, "r")
@@ -129,8 +140,6 @@ for i in range(255):
     else:
         instructionMemory.append(None)
 
-# instructionMemory[0] = 0b00000000010000000010000000100011
-
 ## Initialize Memory
 memory = []
 for i in range(2**6):
@@ -141,12 +150,10 @@ for i in range(2**6):
 registers = []
 for i in range(32):
     registers.append(0)
-# registers[2] = bin(1)
-# registers[3] = bin(2)
 
 ### Main Loop
 # TODO Figure Out Exit Condition
-while instructionMemory[pc] != None:
+while instructionMemory[pc] != None and instructionMemory[pc] != "":
     # Read Instruction
     instruction = int(instructionMemory[pc], 2)
 
@@ -155,7 +162,10 @@ while instructionMemory[pc] != None:
     readReg2 = GetSpecificBits(instruction, 20, 5)
     writeReg = GetSpecificBits(instruction, 7, 5)
     aluControl = [GetSpecificBits(instruction, 30, 1), GetSpecificBits(instruction, 12, 3)]
-    imm = int(ImmGen(instruction), 2)
+    # In Case Imm Is None
+    immTemp = ImmGen(instruction)
+    if immTemp != None:
+        imm = int(immTemp, 2)
 
     # Read Registers
     readData1 = registers[int(readReg1, 2)]
@@ -169,7 +179,6 @@ while instructionMemory[pc] != None:
 
     # MUX To Choose Between Read Data 2 Or Imm
     if ALUSrc(instruction):
-        # TODO Get imm On Decode Step
         aluResult = ALU(int(readData1, 2), imm, aluControl)
     else:
         aluResult = ALU(int(readData1, 2), int(readData2, 2), aluControl)
@@ -223,12 +232,15 @@ while instructionMemory[pc] != None:
         registers[int(f"{writeReg}", 2)] = writeData
 
     # Update Program Counter (End Of Cycle)
-    pc += 4
+    if PCSrc(instruction, aluResult):
+        pc += imm
+    else:
+        pc += 4
 
 
 # print(f"read1: {read1} / {int(read1, 2)}")
 # print(f"read2: {read2} / {int(read2, 2)}")
 # print(f"mem1: {mem1} / {int(mem1, 2)}")
-print(f"writeData: {writeData} / {int(writeData, 2)}")
+# print(f"writeData: {writeData} / {int(writeData, 2)}")
 print(registers)
 print(memory)
