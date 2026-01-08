@@ -155,6 +155,7 @@ while instructionMemory[pc] != None:
     readReg2 = GetSpecificBits(instruction, 20, 5)
     writeReg = GetSpecificBits(instruction, 7, 5)
     aluControl = [GetSpecificBits(instruction, 30, 1), GetSpecificBits(instruction, 12, 3)]
+    imm = int(ImmGen(instruction), 2)
 
     # Read Registers
     readData1 = registers[int(readReg1, 2)]
@@ -169,7 +170,6 @@ while instructionMemory[pc] != None:
     # MUX To Choose Between Read Data 2 Or Imm
     if ALUSrc(instruction):
         # TODO Get imm On Decode Step
-        imm = int(ImmGen(instruction), 2)
         aluResult = ALU(int(readData1, 2), imm, aluControl)
     else:
         aluResult = ALU(int(readData1, 2), int(readData2, 2), aluControl)
