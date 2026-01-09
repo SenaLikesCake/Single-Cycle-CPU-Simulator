@@ -8,11 +8,14 @@
 
 ## Features
 - Read instructions from file
-- R-type, I-type, S-type instructions
+- R-type, I-type, S-type, B-Type instructions
 - Support for other types (yet to have their functions implemented)
 
 ## ToDo
 - Pass file as parameter instead of having hardcoded "test.txt" file
-- Implement some remaining R-Type and I-type instructions
-- Implement B, J and U-type instructions
+- Implement some remaining R-Type, I-type and B-Type instructions
+- Implement J and U-type instructions
 - Write instructions in assembly and have program convert into binary
+
+## Test
+- Ignore this :3
