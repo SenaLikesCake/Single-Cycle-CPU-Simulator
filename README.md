@@ -16,6 +16,3 @@
 - Implement some remaining R-Type, I-type and B-Type instructions
 - Implement J and U-type instructions
 - Write instructions in assembly and have program convert into binary
-
-## Test
-- Ignore this :3
