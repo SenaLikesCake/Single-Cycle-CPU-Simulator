@@ -113,13 +113,17 @@ def ALU(num1, num2, aluControl = None):
     # B-Type
     elif opcode ==  "0b1100011":
         # beq
-        return num1 == num2
+        if aluControl[1] == "0b0":
+            return num1 == num2
         # bne
-        return num1 != num2
+        elif aluControl[1] == "0b1":
+            return num1 != num2
         # blt
-        return num1 < num2
-        # bhe
-        return num1 >=num2
+        elif aluControl[1] == "0b100":
+            return num1 < num2
+        # bge
+        elif aluControl[1] == "0b101":
+            return num1 >= num2
 
 ### Initialization
 
